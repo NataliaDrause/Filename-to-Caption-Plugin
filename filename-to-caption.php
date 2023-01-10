@@ -83,7 +83,33 @@
 
   // 3.1. Add function we pass to the general functionality of the plugin.
   function create_html($content) {
-    return $content . ' HELLO';
+    global $post;
+    $args = array(
+    'order'=>'ASC', 
+    'post_type'=>'attachment', 
+    'post_parent'=>$post->ID, 
+    'post_mime_type'=>'image', 
+    'post_status'=>null,
+    ); 
+    $items = get_posts($args); // collect all the images within content post
+    
+    foreach ($items as $item) {
+      //get the filenames
+      $filename = basename ( get_attached_file( $item->ID ) );
+      // Sanitize the title:  remove file extension:
+      $my_image_caption = preg_replace('/\\.[^.\\s]{3,4}$/', '', $filename);
+      // Sanitize the title:  remove hyphens, underscores & extra spaces:
+      $my_image_caption = preg_replace( '%\s*[-_\s]+\s*%', ' ',  $my_image_caption );
+      $my_image_caption = ucwords( strtolower( $my_image_caption ) );
+      //add filename as caption
+      $data = array(
+        'ID' => $item->ID,
+        'post_excerpt' => $my_image_caption,
+      );
+      wp_update_post( $data );
+      print_r($item);
+    }
+    return $content;
   }
 
  }

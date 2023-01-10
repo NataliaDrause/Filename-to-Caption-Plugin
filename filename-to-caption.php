@@ -24,6 +24,9 @@
 
     // 2. Add database options for settings.
     add_action( 'admin_init', array( $this, 'settings' ) );
+
+    // 3. Add the functionality of the plugin.
+    add_filter('the_content', array( $this, 'filename_to_caption'));
     
   }
 
@@ -69,6 +72,19 @@
   function checkbox_html($args) { ?>
     <input type="checkbox" name="<?php echo $args['theName']; ?>" value="1" <?php checked(get_option($args['theName']), '1') ?>>
   <?php }
+
+  // 3. Add the general functionality of the plugin.
+  function filename_to_caption($content) {
+    if (is_main_query() AND is_single() AND get_option('fcp_caption', '1')) {
+      return $this->create_html($content);
+    }
+    return $content;
+  }
+
+  // 3.1. Add function we pass to the general functionality of the plugin.
+  function create_html($content) {
+    return $content . ' HELLO';
+  }
 
  }
 

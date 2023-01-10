@@ -133,17 +133,15 @@
     }
     // For each match add figcaption.
     foreach ($matches[0] as $match) {
-      // Find the image url in the tag.
-      if (preg_match('@src="([0-9a-z:/._-]+)@i', $match, $src_list)) {
-        $url = $src_list[1];
         
-        if ($url) {
-          $post_id = attachment_url_to_postid($url);
-          if ($post_id) {
-            $figcaption = wp_get_attachment_caption( $post_id );
-            $new_html = str_replace('</figure>', '<figcaption class="wp-element-caption">' . $figcaption .'</figcaption>', $match);
-            $content = str_replace($match, $new_html, $content);
-          }
+      // Find the post ID in the tag.
+      if (preg_match_all('@"wp-image-([0-9]+)"@i', $match, $post_info)) {
+        $post_id = $post_info[1][0];
+        
+        if ($post_id) {
+          $figcaption = wp_get_attachment_caption( $post_id );
+          $new_html = str_replace('</figure>', '<figcaption class="wp-element-caption">' . $figcaption .'</figcaption>', $match);
+          $content = str_replace($match, $new_html, $content);
         }
       }
     }

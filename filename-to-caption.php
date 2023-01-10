@@ -75,6 +75,30 @@
       'default' => '0',
     ));
 
+    // 2.4 Add Figcaption field: build html input field.
+    add_settings_field( 'fcp_figcaption', 'Add figcaption', array( $this, 'checkbox_html' ), 'filename-to-caption-settings', 'fcp_first_section', array( 'theName' => 'fcp_figcaption') );
+    // 2.4.1 Add Figcaption field: register DB setting.
+    register_setting('filename_to_caption_plugin', 'fcp_figcaption', array(
+      'sanitize_callback' => 'sanitize_text_field', 
+      'default' => '0',
+    ));
+
+    // 2.5 Add Title field: build html input field.
+    add_settings_field( 'fcp_title', 'Title', array( $this, 'checkbox_html' ), 'filename-to-caption-settings', 'fcp_first_section', array( 'theName' => 'fcp_title') );
+    // 2.5.1 Add Title field: register DB setting.
+    register_setting('filename_to_caption_plugin', 'fcp_title', array(
+      'sanitize_callback' => 'sanitize_text_field', 
+      'default' => '0',
+    ));
+
+    // 2.5 Add Description field: build html input field.
+    add_settings_field( 'fcp_description', 'Description', array( $this, 'checkbox_html' ), 'filename-to-caption-settings', 'fcp_first_section', array( 'theName' => 'fcp_description') );
+    // 2.5.1 Add Description field: register DB setting.
+    register_setting('filename_to_caption_plugin', 'fcp_description', array(
+      'sanitize_callback' => 'sanitize_text_field', 
+      'default' => '0',
+    ));
+
   }
 
   // 2.4. Caption checkbox HTML on Settings page.
@@ -84,7 +108,11 @@
 
   // 3. Add the general functionality of the plugin.
   function filename_to_caption($content) {
-    if (is_main_query() AND is_single() AND get_option('fcp_caption', '1')) {
+    if (is_main_query() AND is_single() AND
+      ( 
+        get_option('fcp_caption', '1') OR
+        get_option('fcp_figcaption', '1')
+      )) {
       return $this->add_meta($content);
     }
     return $content;
@@ -92,13 +120,12 @@
 
   // 3.1. Add function we pass to the general functionality of the plugin.
   function add_meta($content) {
+
     global $post;
     $args = array(
-    //'order'=>'ASC', 
     'post_type'=>'attachment', 
     'post_parent'=>$post->ID, 
     'post_mime_type'=>'image', 
-    //'post_status'=>null,
     ); 
     $items = get_posts($args); // collect all the images within content post
     
@@ -114,34 +141,48 @@
       // Capitalize first letter in string:
       $my_image_caption = ucfirst( $my_image_caption );
       // Add the sanitized filename as caption meta:
-      
-      $meta = array(
-        'ID' => $item->ID,
-        'post_excerpt' => $my_image_caption,
-        // 'post_title' => $my_image_caption,
-        // 'post_content'  => $my_image_caption,
-      );
+
+      if (get_option('fcp_caption', '1')) {
+        $meta = array(
+          'ID' => $item->ID,
+          'post_excerpt' => $my_image_caption,
+        );
+      }
+      if (get_option('fcp_title', '1')) {
+        $meta = array(
+          'ID' => $item->ID,
+          'post_title' => $my_image_caption,
+        );
+      }
+      if (get_option('fcp_description', '1')) {
+        $meta = array(
+          'ID' => $item->ID,
+          'post_content'  => $my_image_caption,
+        );
+      }
       wp_update_post( $meta );
 
     }
 
     // 5. Add figcaption for every image.
     
-    // Find all figure images in the content and return if there are none.
-    if (!preg_match_all( '@<figure [^>]+><img[^<]*</figure>@', $content, $matches)) {
-      return $content;
-    }
-    // For each match add figcaption.
-    foreach ($matches[0] as $match) {
-        
-      // Find the post ID in the tag.
-      if (preg_match_all('@"wp-image-([0-9]+)"@i', $match, $post_info)) {
-        $post_id = $post_info[1][0];
-        
-        if ($post_id) {
-          $figcaption = wp_get_attachment_caption( $post_id );
-          $new_html = str_replace('</figure>', '<figcaption class="wp-element-caption">' . $figcaption .'</figcaption>', $match);
-          $content = str_replace($match, $new_html, $content);
+    if (get_option('fcp_figcaption', '1')) {
+      // Find all figure images in the content and return if there are none.
+      if (!preg_match_all( '@<figure [^>]+><img[^<]*</figure>@', $content, $matches)) {
+        return $content;
+      }
+      // For each match add figcaption.
+      foreach ($matches[0] as $match) {
+          
+        // Find the post ID in the tag.
+        if (preg_match_all('@"wp-image-([0-9]+)"@i', $match, $post_info)) {
+          $post_id = $post_info[1][0];
+          
+          if ($post_id) {
+            $figcaption = wp_get_attachment_caption( $post_id );
+            $new_html = str_replace('</figure>', '<figcaption class="wp-element-caption">' . $figcaption .'</figcaption>', $match);
+            $content = str_replace($match, $new_html, $content);
+          }
         }
       }
     }
